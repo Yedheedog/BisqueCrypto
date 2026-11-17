@@ -176,7 +176,7 @@ jobs:
           "$TOOLCHAIN/bin/clang++" \
             --target=aarch64-linux-android24 \
             --sysroot="$TOOLCHAIN/sysroot" \
-            -std=c++17 -O2 -fPIC -shared -D__fastcall= \
+            -std=c++17 -O2 -fPIC -shared -static-libstdc++ -D__fastcall= \
             -I/tmp/bisque-port-probe \
             /tmp/bisque-port-probe/BisqueCrypto.cpp \
             /tmp/bisque-port-probe/BisqueB64.cpp \
@@ -184,6 +184,10 @@ jobs:
             -lz -o /tmp/bisque-port-probe/libbisquecrypto.so
           file /tmp/bisque-port-probe/libbisquecrypto.so
           readelf -h /tmp/bisque-port-probe/libbisquecrypto.so | grep -E "Class:|Machine:"
+          if readelf -d /tmp/bisque-port-probe/libbisquecrypto.so | grep -q "libc++_shared.so"; then
+            echo "Unexpected libc++_shared.so dependency; Termux portability would be reduced."
+            exit 1
+          fi
 
       - name: Upload ARM64 Android library
         uses: actions/upload-artifact@v4
