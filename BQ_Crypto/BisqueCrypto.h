@@ -28,33 +28,33 @@ static uint32 bswap32(uint32 x) {
 /*
 	Rapide anaylse de l'algorithme et du mode de chiffrement :
 
-	1/ L'algorithme génère tout d'abord un contexte de clé de plusieurs KB avec diverses
-		opérations de mélanges (globalement basés sur des données statiques).
+	1/ L'algorithme gÃ©nÃ¨re tout d'abord un contexte de clÃ© de plusieurs KB avec diverses
+		opÃ©rations de mÃ©langes (globalement basÃ©s sur des donnÃ©es statiques).
 
-	2/ Les données sont segmentés en blocs de 16 octets, chacun de ces bloc
-		subit des permutations qui sont statiquement défini dans le code et facilement
+	2/ Les donnÃ©es sont segmentÃ©s en blocs de 16 octets, chacun de ces bloc
+		subit des permutations qui sont statiquement dÃ©fini dans le code et facilement
 		identifiable.
 
-	3/ Les données subissent ensuite un traitements à plusieurs tours de chiffrement sur le
-		meme bloc (il dépend exclusivement de la taille de la clé utilisé).
-		Pour la clé initiale de 24 octets, le nombre de tours est de 12.
-		Chaque tour de chiffrement effectue une multitude d'opérations de substitutions avec
+	3/ Les donnÃ©es subissent ensuite un traitements Ã  plusieurs tours de chiffrement sur le
+		meme bloc (il dÃ©pend exclusivement de la taille de la clÃ© utilisÃ©).
+		Pour la clÃ© initiale de 24 octets, le nombre de tours est de 12.
+		Chaque tour de chiffrement effectue une multitude d'opÃ©rations de substitutions avec
 		plusieurs tables de substitutions statiques.
-		Les données subissent une multitudes d'opérations de mélanges complexes, de XOR et
+		Les donnÃ©es subissent une multitudes d'opÃ©rations de mÃ©langes complexes, de XOR et
 		de rotations au niveau des bits.
 
-	Il est à noté qu'à chaque étape du chiffrement se trouve des sous-fonctions de mélanges basé
+	Il est Ã  notÃ© qu'Ã  chaque Ã©tape du chiffrement se trouve des sous-fonctions de mÃ©langes basÃ©
 	sur la "crypto-table" (d'environ 8 KB). Alors bien que beaucoup de tables statiques soient
-	utilisés, le mélange des données contre-balance cela.
+	utilisÃ©s, le mÃ©lange des donnÃ©es contre-balance cela.
 
 
 	
 	Pour le jeu :
 
-	Etonnement la sécurité reste relativement médiocre puisque ce chiffrement n'utilise
-	pas de mode évolutif, il reste simplement en mode d'opération ECB ce qui laisse
-	la possibilité de réaliser une cryptanalyses fréquentielle sur les blocs.
-	La clé initiale n'est pas vraiment caché non plus.
+	Etonnement la sÃ©curitÃ© reste relativement mÃ©diocre puisque ce chiffrement n'utilise
+	pas de mode Ã©volutif, il reste simplement en mode d'opÃ©ration ECB ce qui laisse
+	la possibilitÃ© de rÃ©aliser une cryptanalyses frÃ©quentielle sur les blocs.
+	La clÃ© initiale n'est pas vraiment cachÃ© non plus.
 */
 class MD159
 {
