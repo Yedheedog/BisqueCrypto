@@ -41,7 +41,24 @@ jobs:
           pos = data.find(marker)
           if pos < 0:
               raise SystemExit("Expected x86-only DecryptMD40S routine not found")
-          data = data[:pos]
+          # Remove only this x86/SSE-only function, preserving portable methods
+          # that follow it in the translation unit.
+          body_start = data.find(b"{", pos)
+          if body_start < 0:
+              raise SystemExit("DecryptMD40S function body not found")
+          depth = 0
+          body_end = None
+          for index in range(body_start, len(data)):
+              if data[index:index + 1] == b"{":
+                  depth += 1
+              elif data[index:index + 1] == b"}":
+                  depth -= 1
+                  if depth == 0:
+                      body_end = index + 1
+                      break
+          if body_end is None:
+              raise SystemExit("Could not find end of DecryptMD40S function")
+          data = data[:pos] + data[body_end:]
 
           # Replace decompiler pseudo-pointer temporaries with explicit 32-bit
           # schedule words. This preserves the low-word values without
