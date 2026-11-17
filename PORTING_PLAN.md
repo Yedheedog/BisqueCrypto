@@ -56,6 +56,16 @@ Android artifact:
 - `libbisquecrypto.so` SHA-256: `5d94d347e904f956e7a00be080458c0614584b62ff900b12e548479278aefa6a`.
 - The artifact is attached to Run 70 and is not committed to the OPTC bot.
 
+## Real-device smoke test
+
+After downloading the `libbisquecrypto-android-arm64` artifact from Run 70 and extracting `libbisquecrypto.so`, run this on an ARM64 Android device:
+
+```sh
+python tests/android_device_smoke.py /path/to/libbisquecrypto.so
+```
+
+The script uses only a synthetic key and the fixed `short` message. It checks native library loading, byte-for-byte encryption against the legacy DLL vector, and decryption with both R-Base64 and standard Base64. It makes no network requests and uses no OPTC account data.
+
 ## Remaining validation gates
 
 1. Compare NTY decryption against a known-good original-DLL fixture.
