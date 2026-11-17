@@ -230,7 +230,7 @@ jobs:
         shell: pwsh
         run: |
           $src = Join-Path $env:TEMP "bisque-windows-probe"
-          $installed = Join-Path $env:VCPKG_ROOT "installed\x64-windows"
+          $installed = Join-Path $env:GITHUB_WORKSPACE "vcpkg_installed\x64-windows"
           $zlibLib = Join-Path $installed "lib\zlib.lib"
           $zlibHeader = Join-Path $installed "include\zlib.h"
           if (-not (Test-Path $zlibLib) -or -not (Test-Path $zlibHeader)) {
