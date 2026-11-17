@@ -133,6 +133,15 @@ jobs:
             -lz -o /tmp/bisque-port-probe/probe
           /tmp/bisque-port-probe/probe
 
+      - name: Check repeated key initialization with AddressSanitizer
+        run: |
+          g++ -std=c++17 -O1 -g -fsanitize=address -fno-omit-frame-pointer -D__fastcall= \
+            -I/tmp/bisque-port-probe \
+            /tmp/bisque-port-probe/BisqueCrypto.cpp \
+            /tmp/bisque-port-probe/BisqueB64.cpp \
+            tests/key_reinit_smoke.cpp \
+            -lz -o /tmp/bisque-port-probe/key-reinit-smoke
+          ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 /tmp/bisque-port-probe/key-reinit-smoke
       - name: Build and test portable C ABI with Python ctypes
         run: |
           g++ -std=c++17 -O2 -fPIC -shared -D__fastcall= \
