@@ -41,7 +41,14 @@ new_ctx = portable.CreateFromKey(key)
 assert old_ctx and new_ctx, "could not create original/portable crypto contexts"
 
 def encrypt(lib, ctx, payload):
-    ptr = lib.Encrypt(ctx, payload, len(payload))
+    # The legacy implementation rounds the size up internally and reads a
+    # complete final block. Supply a safely padded backing allocation while
+    # passing the original, unpadded length exactly as the bot wrapper does.
+    padded_size = (len(payload) + 15) & ~15
+    backing = ctypes.create_string_buffer(
+        payload + b"\\0" * (padded_size - len(payload)), padded_size + 1
+    )
+    ptr = lib.Encrypt(ctx, ctypes.cast(backing, ctypes.c_void_p), len(payload))
     assert ptr, "Encrypt returned NULL"
     try:
         return ctypes.string_at(ptr)
