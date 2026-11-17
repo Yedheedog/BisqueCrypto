@@ -122,6 +122,8 @@ int64 MD159::InitializeKey(const char* pKey, uint32 keyLen)
 
     v12 = (V128*)malloc(16 * roundsCount + 56);
     m_KeyContext.m_Alloc0 = (void*)v12;
+    if (!v12)
+        return 0x80000002LL;
     memset(v12, 0, 32);
 
     *((DWORD*)v12 + 6) = 16 * roundsCount + 16;
@@ -170,6 +172,8 @@ int64 MD159::InitializeKey(const char* pKey, uint32 keyLen)
         *((DWORD*)pKeyCtx + 2) |= 0x40000000u;
         v20 = (V128*)malloc(544);
         m_KeyContext.m_Alloc1 = (void*)v20;
+        if (!v20)
+            return 0x80000002LL;
         pKeyCtx[3] = (uint64)v20;
 
         v20[14] = *(V128*)&g_SBox2[224];
@@ -239,6 +243,8 @@ int64 MD159::InitializeKey(const char* pKey, uint32 keyLen)
         *((DWORD*)pKeyCtx + 2) |= 0x20000000u;
         v37 = (uint64*)malloc(8336);
         m_KeyContext.m_Alloc2 = (void*)v37;
+        if (!v37)
+            return 0x80000002LL;
 
         memcpy(v37, g_CryptoTable1, sizeof(g_CryptoTable1));
 
