@@ -230,12 +230,12 @@ jobs:
         shell: pwsh
         run: |
           $src = Join-Path $env:TEMP "bisque-windows-probe"
-          $installed = Join-Path $env:GITHUB_WORKSPACE "vcpkg_installed\x64-windows"
+          $installed = Join-Path $env:GITHUB_WORKSPACE "vcpkg_installed\vcpkg\pkgs\zlib_x64-windows"
           $zlibLib = Join-Path $installed "lib\zlib.lib"
           $zlibHeader = Join-Path $installed "include\zlib.h"
           if (-not (Test-Path $zlibLib) -or -not (Test-Path $zlibHeader)) {
-            Get-ChildItem -Path $env:VCPKG_ROOT -Recurse -File -Filter "zlib.lib" -ErrorAction SilentlyContinue | Select-Object -First 10 | ForEach-Object { Write-Host $_.FullName }
-            throw "Expected zlib files under $installed"
+            Get-ChildItem -Path (Join-Path $env:GITHUB_WORKSPACE "vcpkg_installed") -Recurse -File -Include "*zlib*.lib","zlib.h" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
+            throw "Expected zlib files under package directory $installed"
           }
           $libDir = Split-Path $zlibLib
           $includeDir = Split-Path $zlibHeader
