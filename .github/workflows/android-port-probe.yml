@@ -182,3 +182,62 @@ jobs:
           name: libbisquecrypto-android-arm64
           path: /tmp/bisque-port-probe/libbisquecrypto.so
           if-no-files-found: error
+
+  windows-dll-compatibility:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install zlib
+        shell: pwsh
+        run: |
+          & "$env:VCPKG_ROOT\vcpkg.exe" install zlib:x64-windows
+      - name: Prepare source copy for MSVC
+        shell: pwsh
+        run: |
+          @'
+          from pathlib import Path
+          import os
+          import shutil
+
+          src = Path("BQ_Crypto")
+          dst = Path(os.environ["TEMP"]) / "bisque-windows-probe"
+          shutil.copytree(src, dst)
+          cpp = dst / "BisqueCrypto.cpp"
+          data = cpp.read_bytes()
+          old = (b"                v69 = &v62[4 * BYTE1(v66)];\n"
+                 b"                v70 = &v62[4 * (uint8)v66];\n"
+                 b"                v71 = *((DWORD*)v67 + 256);\n"
+                 b"                LODWORD(v69) = *((DWORD*)v69 + 512);\n"
+                 b"                LODWORD(v70) = *((DWORD*)v70 + 768);")
+          new = (b"                uint32 v69_value = *((DWORD*)(&v62[4 * BYTE1(v66)]) + 512);\n"
+                 b"                uint32 v70_value = *((DWORD*)(&v62[4 * (uint8)v66]) + 768);\n"
+                 b"                v71 = *((DWORD*)v67 + 256);")
+          if old not in data:
+              raise SystemExit("Expected decompiler pseudo-pointer sequence not found")
+          data = data.replace(old, new)
+          old_expr = b"v40 = (((v71 + v68) ^ (uint32)v69) + (DWORD)v70) ^ v63 ^ v64;"
+          new_expr = b"v40 = (((v71 + v68) ^ v69_value) + v70_value) ^ v63 ^ v64;"
+          if old_expr not in data:
+              raise SystemExit("Expected pseudo-pointer expression not found")
+          cpp.write_bytes(data.replace(old_expr, new_expr))
+          '@ | Set-Content -Encoding utf8 prepare_windows.py
+          python prepare_windows.py
+      - name: Build portable Windows DLL
+        shell: pwsh
+        run: |
+          $src = Join-Path $env:TEMP "bisque-windows-probe"
+          $vcpkg = Join-Path $env:VCPKG_ROOT "installed\x64-windows"
+          $out = Join-Path $env:TEMP "portable-bisque.dll"
+          cl /nologo /std:c++17 /EHsc /LD "/I$($vcpkg)\include" "$src\BisqueCrypto.cpp" "$src\BisqueB64.cpp" "$src\portable_api.cpp" /link "/LIBPATH:$($vcpkg)\lib" zlib.lib "/OUT:$out"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "PORTABLE_DLL=$out" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $env:PATH = "$($vcpkg)\bin;$env:PATH"
+          "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Download exact legacy DLL and compare outputs
+        shell: pwsh
+        run: |
+          $legacy = Join-Path $env:TEMP "BisquseDLL.dll"
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/techwhiz1/BisqueCrypto/main/BisquseDLL/BisquseDLL.dll" -OutFile $legacy
+          python tests/compare_original_dll.py $legacy $env:PORTABLE_DLL
+
