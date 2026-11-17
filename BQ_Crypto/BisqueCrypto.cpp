@@ -24,8 +24,8 @@ static const uint8 g_CryptoTable1[] =
 };
 
 /*
-    Cette table permet de dÈfinir un nombre de tours
-    relatif ‡ la taille de la clÈ utilisÈ
+    Cette table permet de d√©finir un nombre de tours
+    relatif ≈ï la taille de la cl√© utilis√©
 */
 static const uint32 g_RoundsTable[] = {
     4, 8, 4, 10, 4, 12, 4, 14, 0
@@ -97,6 +97,9 @@ int64 MD159::InitializeKey(const char* pKey, uint32 keyLen)
     int v71; // w13
     __int64 v72; // x2
 
+    // InitializeKey can be called more than once on an MD159 instance.
+    // Release prior key schedules before replacing their pointers.
+    m_KeyContext.Reset();
     m_KeyContext = KeyContext();
     uint64* pKeyCtx = (uint64*)&m_KeyContext;
     if (!pKeyCtx)
@@ -242,7 +245,7 @@ int64 MD159::InitializeKey(const char* pKey, uint32 keyLen)
         v37[8] = 0x894426A1C8BF6F09LL;
         memcpy(v37 + 9, g_CryptoTableBase, 4096);
 
-        // initialisation de la table de chiffrement (utilisÈ dans le noyau de l'algorithme)
+        // initialisation de la table de chiffrement (utilis√© dans le noyau de l'algorithme)
         for (j = 0LL; j != 72; j += 4LL)
             *(DWORD*)((char*)v37 + j) ^= (((uint8)pKey[j - j / keyLen * keyLen] << 24) | ((uint8)pKey[j + 1 - (j + 1) / keyLen * keyLen] << 16)) & 0xFFFF00FF | ((uint8)pKey[j + 2 - (j + 2) / keyLen * keyLen] << 8) | (uint8)pKey[j + 3 - (j + 3) / keyLen * keyLen];
         
@@ -525,7 +528,7 @@ static void DoDecryptRound159(uint8* a1)
 
 
 /*
-    Retourne le nombre de blocs de donnÈes traitÈs
+    Retourne le nombre de blocs de donn√©es trait√©s
 */
 int MD159::Decrypt(const uint8* data, uint32 sz, std::vector<uint8>& decrypted)
 {
@@ -564,7 +567,7 @@ int MD159::Decrypt(const uint8* data, uint32 sz, std::vector<uint8>& decrypted)
             int iBlock = 0;
             v8 = *(uint8**)(((uint8*)&m_KeyContext) + 16);
 
-            do // itËre chaque bloc (sz/16)
+            do // itƒçre chaque bloc (sz/16)
             {
                 // P-Box par bloc
                 {
