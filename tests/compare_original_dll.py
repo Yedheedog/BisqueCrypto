@@ -82,6 +82,9 @@ try:
         assert decrypt(portable, new_ctx, old_cipher) == decrypt(original, old_ctx, old_cipher)
         assert decrypt(portable, new_ctx, old_cipher) == padded
         assert decrypt(original, old_ctx, new_cipher) == padded
+        if plain == samples[0]:
+            # A deterministic, synthetic vector for the on-device smoke test.
+            print("Synthetic short-message ciphertext:", old_cipher.decode("ascii"))
     # Exercise the repository's published decryption sample as a fixed
     # compatibility vector, not merely encrypt/decrypt round-trips.
     sample_ciphertext = (
