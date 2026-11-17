@@ -32,7 +32,7 @@ jobs:
           old = b"#include <Windows.h>"
           if old not in data:
               raise SystemExit("Expected Windows.h include not found")
-          data = data.replace(old, b"#include <cstdint>\n#include <cstdlib>\n#include <cstring>\n#include <cctype>")
+          data = data.replace(old, b"#include <cstdint>\\n#include <cstdlib>\\n#include <cstring>\\n#include <cctype>")
           header.write_bytes(data)
 
           cpp = dst / "BisqueCrypto.cpp"
@@ -41,8 +41,6 @@ jobs:
           pos = data.find(marker)
           if pos < 0:
               raise SystemExit("Expected x86-only DecryptMD40S routine not found")
-          # Remove only this x86/SSE-only function, preserving portable methods
-          # that follow it in the translation unit.
           body_start = data.find(b"{", pos)
           if body_start < 0:
               raise SystemExit("DecryptMD40S function body not found")
@@ -60,16 +58,13 @@ jobs:
               raise SystemExit("Could not find end of DecryptMD40S function")
           data = data[:pos] + data[body_end:]
 
-          # Replace decompiler pseudo-pointer temporaries with explicit 32-bit
-          # schedule words. This preserves the low-word values without
-          # narrowing actual 64-bit addresses.
-          old = (b"                v69 = &v62[4 * BYTE1(v66)];\n"
-                 b"                v70 = &v62[4 * (uint8)v66];\n"
-                 b"                v71 = *((DWORD*)v67 + 256);\n"
-                 b"                LODWORD(v69) = *((DWORD*)v69 + 512);\n"
+          old = (b"                v69 = &v62[4 * BYTE1(v66)];\\n"
+                 b"                v70 = &v62[4 * (uint8)v66];\\n"
+                 b"                v71 = *((DWORD*)v67 + 256);\\n"
+                 b"                LODWORD(v69) = *((DWORD*)v69 + 512);\\n"
                  b"                LODWORD(v70) = *((DWORD*)v70 + 768);")
-          new = (b"                uint32 v69_value = *((DWORD*)(&v62[4 * BYTE1(v66)]) + 512);\n"
-                 b"                uint32 v70_value = *((DWORD*)(&v62[4 * (uint8)v66]) + 768);\n"
+          new = (b"                uint32 v69_value = *((DWORD*)(&v62[4 * BYTE1(v66)]) + 512);\\n"
+                 b"                uint32 v70_value = *((DWORD*)(&v62[4 * (uint8)v66]) + 768);\\n"
                  b"                v71 = *((DWORD*)v67 + 256);")
           if old not in data:
               raise SystemExit("Expected decompiler pseudo-pointer sequence not found")
@@ -89,6 +84,7 @@ jobs:
           #include <string>
           #include <vector>
           #include <cstring>
+          #include <algorithm>
 
           int main() {
               const char* key = "vuyWQSjlknpJF54ib36txVse";
@@ -100,7 +96,7 @@ jobs:
               MD159 crypto;
               const auto key_status = crypto.InitializeKey(key, std::strlen(key));
               if (key_status < 0) {
-                  std::cerr << "InitializeKey failed: " << key_status << "\n";
+                  std::cerr << "InitializeKey failed: " << key_status << "\\n";
                   return 1;
               }
 
@@ -109,51 +105,63 @@ jobs:
               crypto.Decrypt(encrypted.data(), static_cast<uint32_t>(encrypted.size()), decrypted);
               if (decrypted.size() != input.size() ||
                   !std::equal(input.begin(), input.end(), decrypted.begin())) {
-                  std::cerr << "MD159 round-trip mismatch\n";
+                  std::cerr << "MD159 round-trip mismatch\\n";
                   return 2;
               }
 
               const auto encoded = RB64Encode(encrypted.data(), static_cast<uint32_t>(encrypted.size()));
               const auto decoded = RB64Decode(encoded.c_str());
               if (decoded != encrypted) {
-                  std::cerr << "R-Base64 round-trip mismatch\n";
+                  std::cerr << "R-Base64 round-trip mismatch\\n";
                   return 3;
               }
 
-              std::cout << "MD159 round-trip: PASS\n";
-              std::cout << "R-Base64 round-trip: PASS\n";
-              std::cout << "Ciphertext fixture: " << encoded << "\n";
+              std::cout << "MD159 round-trip: PASS\\n";
+              std::cout << "R-Base64 round-trip: PASS\\n";
+              std::cout << "Ciphertext fixture: " << encoded << "\\n";
               return 0;
           }
           CPP
       - name: Compile and run host portability probe
         run: |
-          g++ -std=c++17 -O2 -D__fastcall= \
-            -I/tmp/bisque-port-probe \
-            /tmp/bisque-port-probe/BisqueCrypto.cpp \
-            /tmp/bisque-port-probe/BisqueB64.cpp \
-            /tmp/bisque-port-probe/probe.cpp \
+          g++ -std=c++17 -O2 -D__fastcall= \\
+            -I/tmp/bisque-port-probe \\
+            /tmp/bisque-port-probe/BisqueCrypto.cpp \\
+            /tmp/bisque-port-probe/BisqueB64.cpp \\
+            /tmp/bisque-port-probe/probe.cpp \\
             -lz -o /tmp/bisque-port-probe/probe
           /tmp/bisque-port-probe/probe
 
       - name: Install Android NDK
         run: |
-          SDK="/usr/local/lib/android/sdk"
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          if [ ! -d "$SDK" ]; then
+            echo "Android SDK directory not found: $SDK"
+            find /usr/local/lib /opt -type f -name sdkmanager -print 2>/dev/null | head -20
+            exit 1
+          fi
+          SDKMANAGER="$(find "$SDK" -type f -name sdkmanager -print -quit)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager not found beneath $SDK"
+            find /usr/local/lib /opt -type f -name sdkmanager -print 2>/dev/null | head -20
+            exit 1
+          fi
+          echo "Using SDK manager: $SDKMANAGER"
           echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
           echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
-          yes | "$SDK/cmdline-tools/16.0/bin/sdkmanager" --licenses >/dev/null || true
-          "$SDK/cmdline-tools/16.0/bin/sdkmanager" --install "ndk;27.2.12479018"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install "ndk;27.2.12479018"
       - name: Cross-compile ARM64 Android shared library
         run: |
           NDK="$ANDROID_SDK_ROOT/ndk/27.2.12479018"
           TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64"
-          "$TOOLCHAIN/bin/clang++" \
-            --target=aarch64-linux-android24 \
-            --sysroot="$TOOLCHAIN/sysroot" \
-            -std=c++17 -O2 -fPIC -shared -D__fastcall= \
-            -I/tmp/bisque-port-probe \
-            /tmp/bisque-port-probe/BisqueCrypto.cpp \
-            /tmp/bisque-port-probe/BisqueB64.cpp \
+          "$TOOLCHAIN/bin/clang++" \\
+            --target=aarch64-linux-android24 \\
+            --sysroot="$TOOLCHAIN/sysroot" \\
+            -std=c++17 -O2 -fPIC -shared -D__fastcall= \\
+            -I/tmp/bisque-port-probe \\
+            /tmp/bisque-port-probe/BisqueCrypto.cpp \\
+            /tmp/bisque-port-probe/BisqueB64.cpp \\
             -lz -o /tmp/bisque-port-probe/libbisquecrypto.so
           file /tmp/bisque-port-probe/libbisquecrypto.so
           readelf -h /tmp/bisque-port-probe/libbisquecrypto.so | grep -E "Class:|Machine:"
