@@ -42,6 +42,26 @@ jobs:
           if pos < 0:
               raise SystemExit("Expected x86-only DecryptMD40S routine not found")
           data = data[:pos]
+
+          # Replace decompiler pseudo-pointer temporaries with explicit 32-bit
+          # schedule words. This preserves the low-word values without
+          # narrowing actual 64-bit addresses.
+          old = (b"                v69 = &v62[4 * BYTE1(v66)];\n"
+                 b"                v70 = &v62[4 * (uint8)v66];\n"
+                 b"                v71 = *((DWORD*)v67 + 256);\n"
+                 b"                LODWORD(v69) = *((DWORD*)v69 + 512);\n"
+                 b"                LODWORD(v70) = *((DWORD*)v70 + 768);")
+          new = (b"                uint32 v69_value = *((DWORD*)(&v62[4 * BYTE1(v66)]) + 512);\n"
+                 b"                uint32 v70_value = *((DWORD*)(&v62[4 * (uint8)v66]) + 768);\n"
+                 b"                v71 = *((DWORD*)v67 + 256);")
+          if old not in data:
+              raise SystemExit("Expected decompiler pseudo-pointer sequence not found")
+          data = data.replace(old, new)
+          old_expr = b"v40 = (((v71 + v68) ^ (uint32)v69) + (DWORD)v70) ^ v63 ^ v64;"
+          new_expr = b"v40 = (((v71 + v68) ^ v69_value) + v70_value) ^ v63 ^ v64;"
+          if old_expr not in data:
+              raise SystemExit("Expected pseudo-pointer expression not found")
+          data = data.replace(old_expr, new_expr)
           cpp.write_bytes(data)
           PY
       - name: Create round-trip probe
