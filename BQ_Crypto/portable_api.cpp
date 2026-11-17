@@ -21,6 +21,21 @@ struct InflateResult {
     bool ok = false;
 };
 
+struct InflateEndGuard {
+    z_stream* stream;
+    ~InflateEndGuard() {
+        if (stream)
+            inflateEnd(stream);
+    }
+    int finish() {
+        if (!stream)
+            return Z_STREAM_ERROR;
+        const int status = inflateEnd(stream);
+        stream = nullptr;
+        return status;
+    }
+};
+
 InflateResult inflate_all(const uint8_t* input, size_t input_size) {
     InflateResult result;
     if ((!input && input_size) || input_size > std::numeric_limits<uInt>::max())
@@ -31,7 +46,11 @@ InflateResult inflate_all(const uint8_t* input, size_t input_size) {
     stream.avail_in = static_cast<uInt>(input_size);
     if (inflateInit(&stream) != Z_OK)
         return result;
+    InflateEndGuard guard{&stream};
 
+    // Decompression is untrusted input; cap expansion and keep the result
+    // within the signed-int size returned by the legacy C ABI.
+    constexpr size_t kMaxInflatedBytes = 512u * 1024u * 1024u;
     uint8_t chunk[8192];
     int status = Z_OK;
     while (status == Z_OK) {
@@ -39,9 +58,13 @@ InflateResult inflate_all(const uint8_t* input, size_t input_size) {
         stream.avail_out = sizeof(chunk);
         status = inflate(&stream, Z_NO_FLUSH);
         const size_t produced = sizeof(chunk) - stream.avail_out;
+        if (produced > kMaxInflatedBytes - result.bytes.size()) {
+            status = Z_MEM_ERROR;
+            break;
+        }
         result.bytes.insert(result.bytes.end(), chunk, chunk + produced);
     }
-    const int end_status = inflateEnd(&stream);
+    const int end_status = guard.finish();
     result.ok = (status == Z_STREAM_END && end_status == Z_OK);
     if (!result.ok)
         result.bytes.clear();
