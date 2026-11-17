@@ -230,12 +230,20 @@ jobs:
         shell: pwsh
         run: |
           $src = Join-Path $env:TEMP "bisque-windows-probe"
-          $vcpkg = Join-Path $env:GITHUB_WORKSPACE "vcpkg_installed\x64-windows"
+          $installed = Join-Path $env:GITHUB_WORKSPACE "vcpkg_installed"
+          $zlibLib = Get-ChildItem -Path $installed -Recurse -File -Filter "zlib.lib" | Select-Object -First 1
+          $zlibHeader = Get-ChildItem -Path $installed -Recurse -File -Filter "zlib.h" | Select-Object -First 1
+          if (-not $zlibLib -or -not $zlibHeader) { throw "Could not locate installed zlib.lib and zlib.h under $installed" }
+          $libDir = Split-Path $zlibLib.FullName
+          $includeDir = Split-Path $zlibHeader.FullName
           $out = Join-Path $env:TEMP "portable-bisque.dll"
-          cl /nologo /std:c++17 /EHsc /LD "/I$($vcpkg)\include" "$src\BisqueCrypto.cpp" "$src\BisqueB64.cpp" "$src\portable_api.cpp" /link "/LIBPATH:$($vcpkg)\lib" zlib.lib "/OUT:$out"
+          Write-Host "Using zlib library: $($zlibLib.FullName)"
+          Write-Host "Using zlib headers: $includeDir"
+          cl /nologo /std:c++17 /EHsc /MD /LD "/I$includeDir" "$src\BisqueCrypto.cpp" "$src\BisqueB64.cpp" "$src\portable_api.cpp" /link "/LIBPATH:$libDir" zlib.lib "/OUT:$out"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           "PORTABLE_DLL=$out" | Out-File -FilePath $env:GITHUB_ENV -Append
-          $env:PATH = "$($vcpkg)\bin;$env:PATH"
+          $zlibDll = Get-ChildItem -Path $installed -Recurse -File -Filter "zlib1.dll" | Select-Object -First 1
+          if ($zlibDll) { $env:PATH = "$(Split-Path $zlibDll.FullName);$env:PATH" }
           "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
       - name: Download exact legacy DLL and compare outputs
         shell: pwsh
