@@ -1,0 +1,100 @@
+name: Android ARM64 portability probe
+
+on:
+  push:
+    branches: [android-arm64-port]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host-portability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install compiler and zlib
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ zlib1g-dev
+      - name: Prepare isolated Linux-compatible source copy
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+
+          src = Path("BQ_Crypto")
+          dst = Path("/tmp/bisque-port-probe")
+          shutil.copytree(src, dst)
+
+          header = dst / "BisqueCrypto.h"
+          data = header.read_bytes()
+          old = b"#include <Windows.h>"
+          if old not in data:
+              raise SystemExit("Expected Windows.h include not found")
+          data = data.replace(old, b"#include <cstdint>\n#include <cstdlib>\n#include <cstring>\n#include <cctype>")
+          header.write_bytes(data)
+
+          cpp = dst / "BisqueCrypto.cpp"
+          data = cpp.read_bytes().replace(b"#include <intrin.h>", b"")
+          marker = b"int MD159::DecryptMD40S("
+          pos = data.find(marker)
+          if pos < 0:
+              raise SystemExit("Expected x86-only DecryptMD40S routine not found")
+          data = data[:pos]
+          cpp.write_bytes(data)
+          PY
+      - name: Create round-trip probe
+        run: |
+          cat > /tmp/bisque-port-probe/probe.cpp <<'CPP'
+          #include "BisqueCrypto.h"
+          #include <iostream>
+          #include <string>
+          #include <vector>
+          #include <cstring>
+
+          int main() {
+              const char* key = "vuyWQSjlknpJF54ib36txVse";
+              const std::string plain = "Bonjour MD159! Android ARM64 portability probe.";
+              const size_t padded = (plain.size() + 15) & ~size_t(15);
+              std::vector<uint8_t> input(padded, 0);
+              std::memcpy(input.data(), plain.data(), plain.size());
+
+              MD159 crypto;
+              const auto key_status = crypto.InitializeKey(key, std::strlen(key));
+              if (key_status < 0) {
+                  std::cerr << "InitializeKey failed: " << key_status << "\n";
+                  return 1;
+              }
+
+              std::vector<uint8_t> encrypted, decrypted;
+              crypto.Encrypt(input.data(), static_cast<uint32_t>(input.size()), encrypted);
+              crypto.Decrypt(encrypted.data(), static_cast<uint32_t>(encrypted.size()), decrypted);
+              if (decrypted.size() != input.size() ||
+                  !std::equal(input.begin(), input.end(), decrypted.begin())) {
+                  std::cerr << "MD159 round-trip mismatch\n";
+                  return 2;
+              }
+
+              const auto encoded = RB64Encode(encrypted.data(), static_cast<uint32_t>(encrypted.size()));
+              const auto decoded = RB64Decode(encoded.c_str());
+              if (decoded != encrypted) {
+                  std::cerr << "R-Base64 round-trip mismatch\n";
+                  return 3;
+              }
+
+              std::cout << "MD159 round-trip: PASS\n";
+              std::cout << "R-Base64 round-trip: PASS\n";
+              std::cout << "Ciphertext fixture: " << encoded << "\n";
+              return 0;
+          }
+          CPP
+      - name: Compile and run host portability probe
+        run: |
+          g++ -std=c++17 -O2 -D__fastcall= \
+            -I/tmp/bisque-port-probe \
+            /tmp/bisque-port-probe/BisqueCrypto.cpp \
+            /tmp/bisque-port-probe/BisqueB64.cpp \
+            /tmp/bisque-port-probe/probe.cpp \
+            -lz -o /tmp/bisque-port-probe/probe
+          /tmp/bisque-port-probe/probe
