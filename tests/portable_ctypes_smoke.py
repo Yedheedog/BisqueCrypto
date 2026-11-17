@@ -36,6 +36,22 @@ try:
     expected = plain + (b"\0" * ((16 - len(plain) % 16) % 16))
     assert decrypted == expected, (decrypted, expected)
 
+    # database.py historically uses Python's standard base64.b64encode()
+    # for encrypted map tables, while API payloads use the R-Base64 alphabet.
+    standard_ciphertext = (
+        encrypted.replace(b".", b"+").replace(b",", b"/").replace(b"_", b"=")
+    )
+    standard_output = ctypes.c_void_p()
+    standard_size = library.Decrypt(
+        instance, standard_ciphertext, ctypes.byref(standard_output)
+    )
+    assert standard_size > 0 and standard_output.value, "standard Base64 was rejected"
+    try:
+        standard_plaintext = ctypes.string_at(standard_output, standard_size)
+    finally:
+        library.ReleaseBuffer(standard_output)
+    assert standard_plaintext == expected, (standard_plaintext, expected)
+
     # Reject malformed R-Base64 instead of silently decoding a partial block.
     for malformed in (b"!", b"A", b"AAAAAAAAAAAAAAAAAAAAAAAA"):
         bad_output = ctypes.c_void_p()
@@ -73,6 +89,7 @@ try:
     library.ReleaseBuffer(unaligned_output)
 
     print("C ABI + Python ctypes round-trip: PASS")
+    print("Standard Base64 database payload compatibility: PASS")
     print("Malformed-input rejection: PASS")
     print("Unaligned NTY decryption path: PASS")
 finally:
