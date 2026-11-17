@@ -191,7 +191,8 @@ jobs:
       - name: Install zlib
         shell: pwsh
         run: |
-          '{"dependencies":["zlib"]}' | Set-Content -Encoding utf8 vcpkg.json
+          $baseline = (git -C $env:VCPKG_ROOT rev-parse HEAD).Trim()
+          @{ "builtin-baseline" = $baseline; dependencies = @("zlib") } | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 vcpkg.json
           & "$env:VCPKG_ROOT\vcpkg.exe" install --triplet x64-windows
       - name: Prepare source copy for MSVC
         shell: pwsh
