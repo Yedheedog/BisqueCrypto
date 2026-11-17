@@ -46,8 +46,11 @@ Latest successful GitHub Actions run: [Run 70](https://github.com/Yedheedog/Bisq
 - [x] Accepts both custom R-Base64 and standard Base64 (including `+`, `/`, and `=`), matching the legacy database map-table path.
 - [x] Direct comparison against the exact legacy Windows DLL: ciphertext matched and cross-decryption passed for four synthetic fixtures.
 - [x] Published legacy decryption sample matched the original DLL by SHA-256 without logging its plaintext.
-- [x] Captured a deterministic synthetic ciphertext vector for the eventual on-device compatibility smoke test.
+- [x] Captured a deterministic synthetic ciphertext vector for the on-device compatibility smoke test.
 - [x] Repeated key initialization (64 key changes on one MD159 instance) passed under AddressSanitizer with leak detection enabled.
+- [x] Android device smoke test passed on the user's Infinix GT 20 Pro (four checks).
+- [x] Android device portable ctypes suite passed (six checks).
+- [x] Android device context lifecycle stress test passed (64 cycles).
 
 Android artifact:
 - Name: `libbisquecrypto-android-arm64`
@@ -69,8 +72,8 @@ The script uses only a synthetic key and the fixed `short` message. It checks na
 ## Remaining validation gates
 
 1. Compare NTY decryption against a known-good original-DLL fixture.
-2. Load and exercise the Android `.so` on a real ARM64 Android/Termux device.
-3. Verify repeated key initialization and native memory ownership under device runtime.
-4. Obtain clear upstream permission/licensing terms before integrating this reconstructed source into the OPTC bot or distributing binaries.
+2. [x] Load and exercise the Android `.so` on the user's real ARM64 Android/Termux device (Infinix GT 20 Pro): native load, R-Base64 decrypt, standard Base64 decrypt, and legacy DLL-compatible encryption vector all passed.
+3. [x] Verify native ownership under device runtime: portable ctypes suite and 64 context create/encrypt/decrypt/release cycles passed.
+4. [ ] Obtain clear upstream permission/licensing terms before integrating this reconstructed source into the OPTC bot or distributing binaries.
 
 No real game login, account action, live game API request, or farming operation has been performed.
