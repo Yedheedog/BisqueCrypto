@@ -132,7 +132,7 @@ BISQUE_EXPORT int DecryptNTY(void* instance, const char* data, uint32 size,
         return 0;
     try {
         uint32 encrypted_size = bswap32(*reinterpret_cast<const uint32*>(data + 4));
-        if (encrypted_size == 0 || encrypted_size > size - 16)
+        if (encrypted_size == 0 || (encrypted_size % 8) != 0 || encrypted_size > size - 16)
             return 0;
 
         std::vector<uint8_t> decrypted;
