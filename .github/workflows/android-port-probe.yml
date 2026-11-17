@@ -194,8 +194,7 @@ jobs:
           $baseline = (Invoke-RestMethod -Uri "https://api.github.com/repos/microsoft/vcpkg/commits/master").sha
           if (-not $baseline) { throw "Could not resolve the vcpkg registry baseline" }
           @{ "builtin-baseline" = $baseline; dependencies = @("zlib") } | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 vcpkg.json
-          $installRoot = Join-Path $env:GITHUB_WORKSPACE "vcpkg_installed"
-          & "$env:VCPKG_ROOT\vcpkg.exe" install --triplet x64-windows "--x-install-root=$installRoot"
+          & "$env:VCPKG_ROOT\vcpkg.exe" install zlib:x64-windows
       - name: Prepare source copy for MSVC
         shell: pwsh
         run: |
@@ -231,18 +230,15 @@ jobs:
         shell: pwsh
         run: |
           $src = Join-Path $env:TEMP "bisque-windows-probe"
-          $searchRoots = @((Join-Path $env:GITHUB_WORKSPACE "vcpkg_installed"), (Join-Path $env:VCPKG_ROOT "installed"))
-          $zlibLib = $null
-          $zlibHeader = $null
-          foreach ($root in $searchRoots) {
-            if (Test-Path $root) {
-              if (-not $zlibLib) { $zlibLib = Get-ChildItem -Path $root -Recurse -File -Filter "zlib.lib" -ErrorAction SilentlyContinue | Select-Object -First 1 }
-              if (-not $zlibHeader) { $zlibHeader = Get-ChildItem -Path $root -Recurse -File -Filter "zlib.h" -ErrorAction SilentlyContinue | Select-Object -First 1 }
-            }
+          $installed = Join-Path $env:VCPKG_ROOT "installed\x64-windows"
+          $zlibLib = Join-Path $installed "lib\zlib.lib"
+          $zlibHeader = Join-Path $installed "include\zlib.h"
+          if (-not (Test-Path $zlibLib) -or -not (Test-Path $zlibHeader)) {
+            Get-ChildItem -Path $env:VCPKG_ROOT -Recurse -File -Filter "zlib.lib" -ErrorAction SilentlyContinue | Select-Object -First 10 | ForEach-Object { Write-Host $_.FullName }
+            throw "Expected zlib files under $installed"
           }
-          if (-not $zlibLib -or -not $zlibHeader) { throw "Could not locate zlib.lib and zlib.h. Searched: $($searchRoots -join '; ')" }
-          $libDir = Split-Path $zlibLib.FullName
-          $includeDir = Split-Path $zlibHeader.FullName
+          $libDir = Split-Path $zlibLib
+          $includeDir = Split-Path $zlibHeader
           $out = Join-Path $env:TEMP "portable-bisque.dll"
           Write-Host "Using zlib library: $($zlibLib.FullName)"
           Write-Host "Using zlib headers: $includeDir"
