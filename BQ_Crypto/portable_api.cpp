@@ -131,7 +131,7 @@ BISQUE_EXPORT int DecryptNTY(void* instance, const char* data, uint32 size,
     if (!instance || !data || !output || size < 16 || size > (1u << 30))
         return 0;
     try {
-        uint32 encrypted_size = bswap32(*reinterpret_cast<const uint32*>(data + 4));
+        // The NTY header may not be naturally aligned. Decode its big-endian\n        // length byte-by-byte instead of dereferencing an unaligned uint32_t.\n        const auto* header = reinterpret_cast<const uint8_t*>(data);\n        const uint32 encrypted_size =\n            (static_cast<uint32>(header[4]) << 24) |\n            (static_cast<uint32>(header[5]) << 16) |\n            (static_cast<uint32>(header[6]) << 8) |\n            static_cast<uint32>(header[7]);
         if (encrypted_size == 0 || (encrypted_size % 8) != 0 || encrypted_size > size - 16)
             return 0;
 
