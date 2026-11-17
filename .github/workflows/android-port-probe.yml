@@ -151,6 +151,7 @@ jobs:
             /tmp/bisque-port-probe/portable_api.cpp \
             -lz -o /tmp/bisque-port-probe/libbisquecrypto-host.so
           python3 tests/portable_ctypes_smoke.py /tmp/bisque-port-probe/libbisquecrypto-host.so
+          python3 tests/android_device_smoke.py /tmp/bisque-port-probe/libbisquecrypto-host.so
       - name: Install Android NDK
         run: |
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
