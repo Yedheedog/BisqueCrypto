@@ -230,10 +230,16 @@ jobs:
         shell: pwsh
         run: |
           $src = Join-Path $env:TEMP "bisque-windows-probe"
-          $installed = Join-Path $env:GITHUB_WORKSPACE "vcpkg_installed"
-          $zlibLib = Get-ChildItem -Path $installed -Recurse -File -Filter "zlib.lib" | Select-Object -First 1
-          $zlibHeader = Get-ChildItem -Path $installed -Recurse -File -Filter "zlib.h" | Select-Object -First 1
-          if (-not $zlibLib -or -not $zlibHeader) { throw "Could not locate installed zlib.lib and zlib.h under $installed" }
+          $searchRoots = @((Join-Path $env:GITHUB_WORKSPACE "vcpkg_installed"), (Join-Path $env:VCPKG_ROOT "installed"))
+          $zlibLib = $null
+          $zlibHeader = $null
+          foreach ($root in $searchRoots) {
+            if (Test-Path $root) {
+              if (-not $zlibLib) { $zlibLib = Get-ChildItem -Path $root -Recurse -File -Filter "zlib.lib" -ErrorAction SilentlyContinue | Select-Object -First 1 }
+              if (-not $zlibHeader) { $zlibHeader = Get-ChildItem -Path $root -Recurse -File -Filter "zlib.h" -ErrorAction SilentlyContinue | Select-Object -First 1 }
+            }
+          }
+          if (-not $zlibLib -or -not $zlibHeader) { throw "Could not locate zlib.lib and zlib.h. Searched: $($searchRoots -join '; ')" }
           $libDir = Split-Path $zlibLib.FullName
           $includeDir = Split-Path $zlibHeader.FullName
           $out = Join-Path $env:TEMP "portable-bisque.dll"
