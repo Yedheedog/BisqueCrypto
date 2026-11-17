@@ -4,8 +4,10 @@ import sys
 from pathlib import Path
 
 original_path, portable_path = map(Path, sys.argv[1:3])
-expected_sha1 = "f01b53272f782b1738a0b25dd350737755954eae"
+# SHA-1 of the downloaded DLL bytes (not the Git tree/blob object ID).
+expected_sha1 = "9d2836af873cb751237fa88ec804f268ea8fd671"
 actual_sha1 = hashlib.sha1(original_path.read_bytes()).hexdigest()
+assert original_path.stat().st_size == 166912
 assert actual_sha1 == expected_sha1, (actual_sha1, expected_sha1)
 
 original = ctypes.CDLL(str(original_path.resolve()))
