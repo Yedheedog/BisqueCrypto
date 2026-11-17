@@ -1,6 +1,5 @@
 import ctypes
 import hashlib
-import os
 import sys
 from pathlib import Path
 
@@ -11,6 +10,7 @@ assert actual_sha1 == expected_sha1, (actual_sha1, expected_sha1)
 
 original = ctypes.CDLL(str(original_path.resolve()))
 portable = ctypes.CDLL(str(portable_path.resolve()))
+
 
 def configure(lib):
     lib.CreateFromKey.argtypes = [ctypes.c_char_p]
@@ -26,6 +26,7 @@ def configure(lib):
     lib.ReleaseInst.argtypes = [ctypes.c_void_p]
     lib.ReleaseInst.restype = None
 
+
 configure(original)
 configure(portable)
 
@@ -40,13 +41,14 @@ old_ctx = original.CreateFromKey(key)
 new_ctx = portable.CreateFromKey(key)
 assert old_ctx and new_ctx, "could not create original/portable crypto contexts"
 
+
 def encrypt(lib, ctx, payload):
     # The legacy implementation rounds the size up internally and reads a
     # complete final block. Supply a safely padded backing allocation while
     # passing the original, unpadded length exactly as the bot wrapper does.
     padded_size = (len(payload) + 15) & ~15
     backing = ctypes.create_string_buffer(
-        payload + b"\0 * (padded_size - len(payload)), padded_size + 1
+        payload + bytes(padded_size - len(payload)), padded_size + 1
     )
     ptr = lib.Encrypt(ctx, ctypes.cast(backing, ctypes.c_void_p), len(payload))
     assert ptr, "Encrypt returned NULL"
@@ -54,6 +56,7 @@ def encrypt(lib, ctx, payload):
         return ctypes.string_at(ptr)
     finally:
         lib.ReleaseBuffer(ptr)
+
 
 def decrypt(lib, ctx, ciphertext):
     output = ctypes.c_void_p()
@@ -64,14 +67,13 @@ def decrypt(lib, ctx, ciphertext):
     finally:
         lib.ReleaseBuffer(output)
 
+
 try:
     for plain in samples:
-        # Match the legacy caller's block-sized input and remove its historical
-        # out-of-bounds padding ambiguity from this compatibility comparison.
         padded_size = (len(plain) + 15) & ~15
-        padded = plain + b"\0" * (padded_size - len(plain))
-        old_cipher = encrypt(original, old_ctx, padded)
-        new_cipher = encrypt(portable, new_ctx, padded)
+        padded = plain + bytes(padded_size - len(plain))
+        old_cipher = encrypt(original, old_ctx, plain)
+        new_cipher = encrypt(portable, new_ctx, plain)
         assert new_cipher == old_cipher, (
             "ciphertext mismatch", plain[:24], old_cipher, new_cipher
         )
