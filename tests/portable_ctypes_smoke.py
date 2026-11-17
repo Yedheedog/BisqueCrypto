@@ -38,3 +38,13 @@ try:
     print("C ABI + Python ctypes round-trip: PASS")
 finally:
     library.ReleaseInst(instance)
+
+# Exercise the repository's higher-level Python wrapper as well.
+sys.path.insert(0, "python")
+from bisque_crypto import BisqueCrypto
+
+with BisqueCrypto(sys.argv[1], key) as crypto:
+    wrapped_ciphertext = crypto.encrypt(plain)
+    wrapped_plaintext = crypto.decrypt(wrapped_ciphertext)
+    assert wrapped_plaintext == expected, (wrapped_plaintext, expected)
+print("Python wrapper round-trip: PASS")
