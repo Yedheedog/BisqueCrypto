@@ -38,19 +38,34 @@ try:
 
     # database.py historically uses Python's standard base64.b64encode()
     # for encrypted map tables, while API payloads use the R-Base64 alphabet.
-    standard_ciphertext = (
-        encrypted.replace(b".", b"+").replace(b",", b"/").replace(b"_", b"=")
-    )
-    standard_output = ctypes.c_void_p()
-    standard_size = library.Decrypt(
-        instance, standard_ciphertext, ctypes.byref(standard_output)
-    )
-    assert standard_size > 0 and standard_output.value, "standard Base64 was rejected"
-    try:
-        standard_plaintext = ctypes.string_at(standard_output, standard_size)
-    finally:
-        library.ReleaseBuffer(standard_output)
-    assert standard_plaintext == expected, (standard_plaintext, expected)
+    # Exercise deterministic blocks until both standard special characters
+    # (+ and /) and standard padding (=) have appeared.
+    standard_symbols = set()
+    for value in range(256):
+        database_plain = bytes([value]) * 16
+        database_cipher = library.Encrypt(instance, database_plain, len(database_plain))
+        assert database_cipher, "database fixture encryption failed"
+        try:
+            custom_text = ctypes.string_at(database_cipher)
+        finally:
+            library.ReleaseBuffer(database_cipher)
+        standard_text = (
+            custom_text.replace(b".", b"+").replace(b",", b"/").replace(b"_", b"=")
+        )
+        standard_symbols.update(byte for byte in standard_text if byte in b"+/=")
+        standard_output = ctypes.c_void_p()
+        standard_size = library.Decrypt(
+            instance, standard_text, ctypes.byref(standard_output)
+        )
+        assert standard_size > 0 and standard_output.value, "standard Base64 was rejected"
+        try:
+            standard_plaintext = ctypes.string_at(standard_output, standard_size)
+        finally:
+            library.ReleaseBuffer(standard_output)
+        assert standard_plaintext == database_plain, (standard_plaintext, database_plain)
+        if standard_symbols == {ord("+"), ord("/"), ord("=")}:
+            break
+    assert standard_symbols == {ord("+"), ord("/"), ord("=")}, standard_symbols
 
     # Reject malformed R-Base64 instead of silently decoding a partial block.
     for malformed in (b"!", b"A", b"AAAAAAAAAAAAAAAAAAAAAAAA"):
