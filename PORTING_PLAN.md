@@ -1,6 +1,6 @@
 # Android ARM64 Port Investigation
 
-Status: experimental validation passed for the portable C ABI and Android ARM64 cross-compile; real-device validation and upstream permission remain outstanding.
+Status: portable C ABI, Android ARM64 cross-compile, and real-device synthetic validation passed; known-good NTY fixture and upstream permission remain outstanding.
 
 ## Scope
 
@@ -64,7 +64,7 @@ After downloading the `libbisquecrypto-android-arm64` artifact from Run 70 and e
 python tests/android_device_smoke.py /path/to/libbisquecrypto.so
 ```
 
-The script uses only a synthetic key and the fixed `short` message. It checks native library loading, byte-for-byte encryption against the legacy DLL vector, and decryption with both R-Base64 and standard Base64. It makes no network requests and uses no OPTC account data.
+The script uses only a synthetic key and the fixed `short` message. It checks native library loading, byte-for-byte encryption against the legacy DLL vector, and decryption with both R-Base64 and standard Base64. On the user's Infinix GT 20 Pro, all four checks passed. The portable ctypes suite also passed on-device, including standard Base64 map-table compatibility, malformed-input rejection, the unaligned MD144 path, and the Python wrapper round-trip. A separate 64-cycle context lifecycle stress test passed. These tests make no network requests and use no OPTC account data.
 
 ## Remaining validation gates
 
