@@ -50,7 +50,7 @@ Android artifact:
 - Name: `libbisquecrypto-android-arm64`
 - Artifact ID: `14314059511`
 - Target: Android API 24, AArch64, NDK r27c.
-- `libbisquecrypto.so` SHA-256: `827594ea81164fe1ae4e9bfc5f6bad4e5d6bbeb5c8d0d005bd24f7e4d093025f`.
+- `libbisquecrypto.so` SHA-256: `827594ea81164fe4e2c4f2c4e201e27f479cacdc8faecfba8a74c58432fecd8`.
 - The artifact is attached to Run 59 and is not committed to the OPTC bot.
 
 ## Remaining validation gates
