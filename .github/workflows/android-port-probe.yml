@@ -135,3 +135,21 @@ jobs:
             /tmp/bisque-port-probe/probe.cpp \
             -lz -o /tmp/bisque-port-probe/probe
           /tmp/bisque-port-probe/probe
+
+      - name: Install Android NDK
+        uses: android-actions/setup-android@v3
+      - name: Cross-compile ARM64 Android shared library
+        run: |
+          sdkmanager --install "ndk;27.2.12479018"
+          NDK="$ANDROID_SDK_ROOT/ndk/27.2.12479018"
+          TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64"
+          "$TOOLCHAIN/bin/clang++" \
+            --target=aarch64-linux-android24 \
+            --sysroot="$TOOLCHAIN/sysroot" \
+            -std=c++17 -O2 -fPIC -shared -D__fastcall= \
+            -I/tmp/bisque-port-probe \
+            /tmp/bisque-port-probe/BisqueCrypto.cpp \
+            /tmp/bisque-port-probe/BisqueB64.cpp \
+            -lz -o /tmp/bisque-port-probe/libbisquecrypto.so
+          file /tmp/bisque-port-probe/libbisquecrypto.so
+          readelf -h /tmp/bisque-port-probe/libbisquecrypto.so | grep -E "Class:|Machine:"
