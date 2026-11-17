@@ -57,18 +57,24 @@ try:
     )
     assert nty_size == 0 and not nty_output.value, nty_size
 
-    # Deliberately unaligned NTY header: this must fail cleanly, not fault.
-    unaligned = ctypes.create_string_buffer(b"X" + bytes(malformed_nty), len(malformed_nty) + 1)
+    # Exercise the actual MD144 path with a deliberately unaligned input buffer.
+    valid_block_nty = bytearray(24)
+    valid_block_nty[7] = 8  # One complete 8-byte MD144 block.
+    valid_block_nty[16:24] = bytes(range(8))
+    unaligned = ctypes.create_string_buffer(
+        b"X" + bytes(valid_block_nty), len(valid_block_nty) + 1
+    )
     unaligned_output = ctypes.c_void_p()
     unaligned_size = library.DecryptNTY(
-        instance, ctypes.byref(unaligned, 1), len(malformed_nty),
+        instance, ctypes.byref(unaligned, 1), len(valid_block_nty),
         ctypes.byref(unaligned_output), False
     )
-    assert unaligned_size == 0 and not unaligned_output.value, unaligned_size
+    assert unaligned_size == 8 and unaligned_output.value, unaligned_size
+    library.ReleaseBuffer(unaligned_output)
 
     print("C ABI + Python ctypes round-trip: PASS")
     print("Malformed-input rejection: PASS")
-    print("Unaligned NTY header handling: PASS")
+    print("Unaligned NTY decryption path: PASS")
 finally:
     library.ReleaseInst(instance)
 
