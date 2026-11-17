@@ -188,13 +188,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ilammy/msvc-dev-cmd@v1
-      - name: Install zlib
-        shell: pwsh
-        run: |
-          $baseline = (Invoke-RestMethod -Uri "https://api.github.com/repos/microsoft/vcpkg/commits/master").sha
-          if (-not $baseline) { throw "Could not resolve the vcpkg registry baseline" }
-          @{ "builtin-baseline" = $baseline; dependencies = @("zlib") } | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 vcpkg.json
-          & "$env:VCPKG_ROOT\vcpkg.exe" install --triplet x64-windows
       - name: Prepare source copy for MSVC
         shell: pwsh
         run: |
@@ -224,30 +217,19 @@ jobs:
           if old_expr not in data:
               raise SystemExit("Expected pseudo-pointer expression not found")
           cpp.write_bytes(data.replace(old_expr, new_expr))
+          header = dst / "BisqueCrypto.h"
+          header_data = header.read_text(encoding="utf-8-sig")
+          header.write_text(header_data.replace("#include <zlib.h>", ""), encoding="utf-8")
           '@ | Set-Content -Encoding utf8 prepare_windows.py
           python prepare_windows.py
       - name: Build portable Windows DLL
         shell: pwsh
         run: |
           $src = Join-Path $env:TEMP "bisque-windows-probe"
-          $installed = Join-Path $env:GITHUB_WORKSPACE "vcpkg_installed\x64-windows"
-          $zlibLib = Join-Path $installed "lib\zlib.lib"
-          $zlibHeader = Join-Path $installed "include\zlib.h"
-          if (-not (Test-Path $zlibLib) -or -not (Test-Path $zlibHeader)) {
-            Get-ChildItem -Path (Join-Path $env:GITHUB_WORKSPACE "vcpkg_installed") -Recurse -File -Include "*zlib*.lib","zlib.h" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
-            throw "Expected zlib files under package directory $installed"
-          }
-          $libDir = Split-Path $zlibLib
-          $includeDir = Split-Path $zlibHeader
           $out = Join-Path $env:TEMP "portable-bisque.dll"
-          Write-Host "Using zlib library: $($zlibLib.FullName)"
-          Write-Host "Using zlib headers: $includeDir"
-          cl /nologo /std:c++17 /EHsc /MD /LD "/I$includeDir" "$src\BisqueCrypto.cpp" "$src\BisqueB64.cpp" "$src\portable_api.cpp" /link "/LIBPATH:$libDir" zlib.lib "/OUT:$out"
+          cl /nologo /std:c++17 /EHsc /MD /LD /DBISQUE_NO_ZLIB "$src\BisqueCrypto.cpp" "$src\BisqueB64.cpp" "$src\portable_api.cpp" /link "/OUT:$out"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           "PORTABLE_DLL=$out" | Out-File -FilePath $env:GITHUB_ENV -Append
-          $zlibDll = Get-ChildItem -Path $installed -Recurse -File -Filter "zlib1.dll" | Select-Object -First 1
-          if ($zlibDll) { $env:PATH = "$(Split-Path $zlibDll.FullName);$env:PATH" }
-          "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
       - name: Download exact legacy DLL and compare outputs
         shell: pwsh
         run: |
