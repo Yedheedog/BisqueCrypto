@@ -70,9 +70,7 @@ try:
     # Match database.py's 512-byte encrypted map-table input size.
     map_plaintext = bytes(range(256)) * 2
     map_buffer = ctypes.create_string_buffer(map_plaintext, len(map_plaintext) + 1)
-    map_cipher_ptr = library.Encrypt(
-        instance, ctypes.cast(map_buffer, ctypes.c_void_p), len(map_plaintext)
-    )
+    map_cipher_ptr = library.Encrypt(instance, map_buffer, len(map_plaintext))
     assert map_cipher_ptr, "512-byte map fixture encryption failed"
     try:
         map_custom = ctypes.string_at(map_cipher_ptr)
