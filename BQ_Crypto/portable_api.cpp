@@ -149,8 +149,10 @@ BISQUE_EXPORT void* Encrypt(void* instance, const char* data, int length) {
         std::vector<uint8_t> padded(padded_size, 0);
         std::memcpy(padded.data(), data, plain_size);
         std::vector<uint8_t> encrypted;
-        static_cast<MD159*>(instance)->Encrypt(padded.data(),
-            static_cast<uint32>(padded.size()), encrypted);
+        const int encrypted_blocks = static_cast<MD159*>(instance)->Encrypt(
+            padded.data(), static_cast<uint32>(padded.size()), encrypted);
+        if (encrypted_blocks <= 0 || encrypted_blocks != static_cast<int>(padded.size() / 16))
+            return nullptr;
         const std::string encoded = RB64Encode(encrypted.data(),
             static_cast<uint32>(encrypted.size()));
         return copy_to_malloc(reinterpret_cast<const uint8_t*>(encoded.data()), encoded.size());
@@ -170,8 +172,10 @@ BISQUE_EXPORT int Decrypt(void* instance, const char* data, char** output) {
             decoded.size() > std::numeric_limits<uint32>::max())
             return 0;
         std::vector<uint8_t> plaintext;
-        static_cast<MD159*>(instance)->Decrypt(decoded.data(),
-            static_cast<uint32>(decoded.size()), plaintext);
+        const int decrypted_blocks = static_cast<MD159*>(instance)->Decrypt(
+            decoded.data(), static_cast<uint32>(decoded.size()), plaintext);
+        if (decrypted_blocks <= 0 || decrypted_blocks != static_cast<int>(decoded.size() / 16))
+            return 0;
         if (plaintext.size() > static_cast<size_t>(std::numeric_limits<int>::max()))
             return 0;
         *output = static_cast<char*>(copy_to_malloc(plaintext.data(), plaintext.size()));
@@ -204,8 +208,10 @@ BISQUE_EXPORT int DecryptNTY(void* instance, const char* data, uint32 size,
         const auto* payload = reinterpret_cast<const uint8_t*>(data) + 16;
         const std::vector<uint8_t> aligned_payload(payload, payload + encrypted_size);
         std::vector<uint8_t> decrypted;
-        static_cast<MD159*>(instance)->DecryptMD144(
+        const int decrypted_blocks = static_cast<MD159*>(instance)->DecryptMD144(
             aligned_payload.data(), encrypted_size, decrypted);
+        if (decrypted_blocks <= 0 || decrypted_blocks != static_cast<int>(encrypted_size / 8))
+            return 0;
 
         std::vector<uint8_t> final_bytes;
         if (is_compressed) {
