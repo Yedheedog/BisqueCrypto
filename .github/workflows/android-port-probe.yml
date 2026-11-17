@@ -207,7 +207,7 @@ jobs:
           dst = Path(os.environ["TEMP"]) / "bisque-windows-probe"
           shutil.copytree(src, dst)
           cpp = dst / "BisqueCrypto.cpp"
-          data = cpp.read_bytes()
+          data = cpp.read_bytes().replace(b"\r\n", b"\n")
           old = (b"                v69 = &v62[4 * BYTE1(v66)];\n"
                  b"                v70 = &v62[4 * (uint8)v66];\n"
                  b"                v71 = *((DWORD*)v67 + 256);\n"
