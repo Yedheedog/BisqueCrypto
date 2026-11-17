@@ -35,7 +35,10 @@ if not instance:
     raise RuntimeError("CreateFromKey returned NULL")
 
 try:
-    encrypted_ptr = library.Encrypt(instance, plaintext, len(plaintext))
+    plaintext_buffer = ctypes.create_string_buffer(plaintext, len(plaintext) + 1)
+    encrypted_ptr = library.Encrypt(
+        instance, ctypes.cast(plaintext_buffer, ctypes.c_void_p), len(plaintext)
+    )
     if not encrypted_ptr:
         raise RuntimeError("Encrypt returned NULL")
     try:
