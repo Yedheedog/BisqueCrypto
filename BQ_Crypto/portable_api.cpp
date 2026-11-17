@@ -5,6 +5,7 @@
 #include <limits>
 #include <new>
 #include <string>
+#include <utility>
 #include <vector>
 #include <zlib.h>
 
