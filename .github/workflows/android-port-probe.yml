@@ -32,7 +32,7 @@ jobs:
           old = b"#include <Windows.h>"
           if old not in data:
               raise SystemExit("Expected Windows.h include not found")
-          data = data.replace(old, b"#include <cstdint>\\n#include <cstdlib>\\n#include <cstring>\\n#include <cctype>")
+          data = data.replace(old, b"#include <cstdint>\n#include <cstdlib>\n#include <cstring>\n#include <cctype>")
           header.write_bytes(data)
 
           cpp = dst / "BisqueCrypto.cpp"
@@ -58,13 +58,13 @@ jobs:
               raise SystemExit("Could not find end of DecryptMD40S function")
           data = data[:pos] + data[body_end:]
 
-          old = (b"                v69 = &v62[4 * BYTE1(v66)];\\n"
-                 b"                v70 = &v62[4 * (uint8)v66];\\n"
-                 b"                v71 = *((DWORD*)v67 + 256);\\n"
-                 b"                LODWORD(v69) = *((DWORD*)v69 + 512);\\n"
+          old = (b"                v69 = &v62[4 * BYTE1(v66)];\n"
+                 b"                v70 = &v62[4 * (uint8)v66];\n"
+                 b"                v71 = *((DWORD*)v67 + 256);\n"
+                 b"                LODWORD(v69) = *((DWORD*)v69 + 512);\n"
                  b"                LODWORD(v70) = *((DWORD*)v70 + 768);")
-          new = (b"                uint32 v69_value = *((DWORD*)(&v62[4 * BYTE1(v66)]) + 512);\\n"
-                 b"                uint32 v70_value = *((DWORD*)(&v62[4 * (uint8)v66]) + 768);\\n"
+          new = (b"                uint32 v69_value = *((DWORD*)(&v62[4 * BYTE1(v66)]) + 512);\n"
+                 b"                uint32 v70_value = *((DWORD*)(&v62[4 * (uint8)v66]) + 768);\n"
                  b"                v71 = *((DWORD*)v67 + 256);")
           if old not in data:
               raise SystemExit("Expected decompiler pseudo-pointer sequence not found")
@@ -96,7 +96,7 @@ jobs:
               MD159 crypto;
               const auto key_status = crypto.InitializeKey(key, std::strlen(key));
               if (key_status < 0) {
-                  std::cerr << "InitializeKey failed: " << key_status << "\\n";
+                  std::cerr << "InitializeKey failed: " << key_status << "\n";
                   return 1;
               }
 
@@ -105,20 +105,20 @@ jobs:
               crypto.Decrypt(encrypted.data(), static_cast<uint32_t>(encrypted.size()), decrypted);
               if (decrypted.size() != input.size() ||
                   !std::equal(input.begin(), input.end(), decrypted.begin())) {
-                  std::cerr << "MD159 round-trip mismatch\\n";
+                  std::cerr << "MD159 round-trip mismatch\n";
                   return 2;
               }
 
               const auto encoded = RB64Encode(encrypted.data(), static_cast<uint32_t>(encrypted.size()));
               const auto decoded = RB64Decode(encoded.c_str());
               if (decoded != encrypted) {
-                  std::cerr << "R-Base64 round-trip mismatch\\n";
+                  std::cerr << "R-Base64 round-trip mismatch\n";
                   return 3;
               }
 
-              std::cout << "MD159 round-trip: PASS\\n";
-              std::cout << "R-Base64 round-trip: PASS\\n";
-              std::cout << "Ciphertext fixture: " << encoded << "\\n";
+              std::cout << "MD159 round-trip: PASS\n";
+              std::cout << "R-Base64 round-trip: PASS\n";
+              std::cout << "Ciphertext fixture: " << encoded << "\n";
               return 0;
           }
           CPP
