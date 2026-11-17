@@ -82,6 +82,20 @@ try:
         assert decrypt(portable, new_ctx, old_cipher) == decrypt(original, old_ctx, old_cipher)
         assert decrypt(portable, new_ctx, old_cipher) == padded
         assert decrypt(original, old_ctx, new_cipher) == padded
+    # Exercise the repository's published decryption sample as a fixed
+    # compatibility vector, not merely encrypt/decrypt round-trips.
+    sample_ciphertext = (
+        b"IbiObF5TlhPOGuMjZI,ukyvc9ZAshH..c6HTU2UeTuPBwAQNx6hUwx4HHAcS."
+        b"7PHFdDn4dYUsBdPIHLQDDpdZ3oVWjdvFnes3Xy3sp9eb7JEBgXtRgzg."
+        b"yotD22sDDnF2BiRtfE1LIRWXgj8uPKs63g2XAxNenLcrIZzVcbIv2R5a3Q1N7UYwAt"
+        b"Akm0cKq.lgJS3RFdTQ3RkuxEIxUM3sw__"
+    )
+    old_sample = decrypt(original, old_ctx, sample_ciphertext)
+    new_sample = decrypt(portable, new_ctx, sample_ciphertext)
+    assert new_sample == old_sample, ("published sample decryption mismatch", old_sample, new_sample)
+    print("Published sample plaintext SHA-256:", hashlib.sha256(new_sample).hexdigest())
+    print("Published sample plaintext hex:", new_sample.hex())
+
     print("Original Windows DLL vs portable C ABI: PASS")
     print("Compared ciphertext and cross-decryption for", len(samples), "fixtures")
 finally:
