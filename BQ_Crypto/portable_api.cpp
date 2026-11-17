@@ -11,7 +11,9 @@
 #include <string>
 #include <utility>
 #include <vector>
+#ifndef BISQUE_NO_ZLIB
 #include <zlib.h>
+#endif
 
 #if defined(_WIN32)
 #define BISQUE_EXPORT __declspec(dllexport)
@@ -20,6 +22,7 @@
 #endif
 
 namespace {
+#ifndef BISQUE_NO_ZLIB
 struct InflateResult {
     std::vector<uint8_t> bytes;
     bool ok = false;
@@ -74,6 +77,8 @@ InflateResult inflate_all(const uint8_t* input, size_t input_size) {
         result.bytes.clear();
     return result;
 }
+
+#endif
 
 bool is_valid_rbase64(const char* data) {
     if (!data)
@@ -204,10 +209,16 @@ BISQUE_EXPORT int DecryptNTY(void* instance, const char* data, uint32 size,
 
         std::vector<uint8_t> final_bytes;
         if (is_compressed) {
+#ifdef BISQUE_NO_ZLIB
+            // The Windows compatibility probe validates MD159 only. NTY
+            // decompression remains enabled in the Android/Linux builds.
+            return 0;
+#else
             InflateResult inflated = inflate_all(decrypted.data(), decrypted.size());
             if (!inflated.ok)
                 return 0;
             final_bytes = std::move(inflated.bytes);
+#endif
         } else {
             final_bytes = std::move(decrypted);
         }
