@@ -33,7 +33,7 @@ try:
     finally:
         library.ReleaseBuffer(decrypted_ptr)
 
-    expected = plain + (b"\\0" * ((16 - len(plain) % 16) % 16))
+    expected = plain + (b"\0" * ((16 - len(plain) % 16) % 16))
     assert decrypted == expected, (decrypted, expected)
 
     # Reject malformed R-Base64 instead of silently decoding a partial block.
