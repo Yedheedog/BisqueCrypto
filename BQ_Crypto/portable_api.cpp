@@ -88,12 +88,17 @@ bool is_valid_rbase64(const char* data) {
         return false;
 
     size_t padding = 0;
+    unsigned char padding_char = 0;
     for (size_t i = 0; i < length; ++i) {
         const unsigned char ch = static_cast<unsigned char>(data[i]);
         const bool alphabet =
             (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
-            (ch >= '0' && ch <= '9') || ch == '.' || ch == ',';
-        if (ch == '_') {
+            (ch >= '0' && ch <= '9') || ch == '.' || ch == ',' ||
+            ch == '+' || ch == '/';
+        if (ch == '_' || ch == '=') {
+            if (padding_char != 0 && padding_char != ch)
+                return false;
+            padding_char = ch;
             ++padding;
             if (padding > 2)
                 return false;
