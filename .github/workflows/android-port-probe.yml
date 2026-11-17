@@ -135,18 +135,17 @@ jobs:
       - name: Install Android NDK
         run: |
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
-          if [ ! -d "$SDK" ]; then
-            echo "Android SDK directory not found: $SDK"
-            find /usr/local/lib /opt -type f -name sdkmanager -print 2>/dev/null | head -20
-            exit 1
-          fi
-          SDKMANAGER="$(find "$SDK" -type f -name sdkmanager -print -quit)"
+          echo "Android SDK candidate: $SDK"
+          SDKMANAGER="$(find "$SDK" /usr/local/lib/android /opt -type f -name sdkmanager -print -quit 2>/dev/null)"
           if [ -z "$SDKMANAGER" ]; then
-            echo "sdkmanager not found beneath $SDK"
+            echo "sdkmanager not found; available Android SDK directories:"
+            ls -la /usr/local/lib/android /usr/local/lib/android/sdk /opt/android-sdk 2>/dev/null || true
             find /usr/local/lib /opt -type f -name sdkmanager -print 2>/dev/null | head -20
             exit 1
           fi
+          SDK="$(dirname "$(dirname "$(dirname "$SDKMANAGER")")")"
           echo "Using SDK manager: $SDKMANAGER"
+          echo "Resolved Android SDK: $SDK"
           echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
           echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
