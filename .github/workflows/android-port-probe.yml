@@ -191,7 +191,8 @@ jobs:
       - name: Install zlib
         shell: pwsh
         run: |
-          & "$env:VCPKG_ROOT\vcpkg.exe" install zlib:x64-windows
+          '{"dependencies":["zlib"]}' | Set-Content -Encoding utf8 vcpkg.json
+          & "$env:VCPKG_ROOT\vcpkg.exe" install --triplet x64-windows
       - name: Prepare source copy for MSVC
         shell: pwsh
         run: |
@@ -227,7 +228,7 @@ jobs:
         shell: pwsh
         run: |
           $src = Join-Path $env:TEMP "bisque-windows-probe"
-          $vcpkg = Join-Path $env:VCPKG_ROOT "installed\x64-windows"
+          $vcpkg = Join-Path $env:GITHUB_WORKSPACE "vcpkg_installed\x64-windows"
           $out = Join-Path $env:TEMP "portable-bisque.dll"
           cl /nologo /std:c++17 /EHsc /LD "/I$($vcpkg)\include" "$src\BisqueCrypto.cpp" "$src\BisqueB64.cpp" "$src\portable_api.cpp" /link "/LIBPATH:$($vcpkg)\lib" zlib.lib "/OUT:$out"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
