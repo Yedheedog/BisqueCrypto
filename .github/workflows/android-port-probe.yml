@@ -194,7 +194,7 @@ jobs:
           $baseline = (Invoke-RestMethod -Uri "https://api.github.com/repos/microsoft/vcpkg/commits/master").sha
           if (-not $baseline) { throw "Could not resolve the vcpkg registry baseline" }
           @{ "builtin-baseline" = $baseline; dependencies = @("zlib") } | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 vcpkg.json
-          & "$env:VCPKG_ROOT\vcpkg.exe" install zlib:x64-windows
+          & "$env:VCPKG_ROOT\vcpkg.exe" install --triplet x64-windows
       - name: Prepare source copy for MSVC
         shell: pwsh
         run: |
