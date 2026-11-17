@@ -92,9 +92,12 @@ try:
     )
     old_sample = decrypt(original, old_ctx, sample_ciphertext)
     new_sample = decrypt(portable, new_ctx, sample_ciphertext)
-    assert new_sample == old_sample, ("published sample decryption mismatch", old_sample, new_sample)
-    print("Published sample plaintext SHA-256:", hashlib.sha256(new_sample).hexdigest())
-    print("Published sample plaintext hex:", new_sample.hex())
+    assert new_sample == old_sample, "published sample decryption mismatch"
+    # This published ciphertext decodes to session metadata. Compare only a
+    # one-way digest; never print or persist the plaintext or its embedded key.
+    sample_digest = hashlib.sha256(new_sample).hexdigest()
+    assert sample_digest == "a9f31af8acc4176c523ec39f174ca0b537a6e9aeb745f5365b2ee6994e88758d", sample_digest
+    print("Published legacy decryption vector: PASS (SHA-256 matched)")
 
     print("Original Windows DLL vs portable C ABI: PASS")
     print("Compared ciphertext and cross-decryption for", len(samples), "fixtures")
