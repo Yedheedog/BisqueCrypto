@@ -25,13 +25,15 @@ The source includes `defs.h` with Hex-Rays decompiler-output definitions. Treat 
 - Added a portable C ABI exposing `CreateFromKey`, `Encrypt`, `Decrypt`, `DecryptNTY`, `ReleaseBuffer`, and `ReleaseInst`.
 - Added a Python ctypes wrapper and smoke tests.
 - Removed the Intel-only `DecryptMD40S` implementation from the temporary Android/Linux build copy; the core MD159/MD144 paths are the current focus.
-- Added input-length checks, unaligned NTY header parsing, aligned payload handling, and a bounded zlib inflate path.
+- Added input-length and block-count checks, unaligned NTY header parsing, aligned payload handling, and a bounded zlib inflate path.
+- Added allocation-failure checks for all three key-schedule allocations.
+- Statically linked the C++ runtime so the Android `.so` does not depend on `libc++_shared.so`; it retains only Android system dependencies including `libz.so`.
 - The Android/Linux build retains zlib-backed NTY inflation.
 - The Windows comparison build defines `BISQUE_NO_ZLIB` and skips only compressed NTY inflation; it is used to compare the MD159 C ABI with the legacy DLL.
 
 ## Verified validation
 
-Latest successful GitHub Actions run: [Run 55](https://github.com/Yedheedog/BisqueCrypto/actions/runs/44049278933).
+Latest successful GitHub Actions run: [Run 59](https://github.com/Yedheedog/BisqueCrypto/actions/runs/44053677730).
 
 - [x] Linux host compilation and MD159/R-Base64 round-trips.
 - [x] Portable C ABI tested through Python ctypes.
@@ -39,15 +41,16 @@ Latest successful GitHub Actions run: [Run 55](https://github.com/Yedheedog/Bisq
 - [x] Malformed-input rejection.
 - [x] Unaligned NTY input path exercised.
 - [x] Android NDK cross-compile for `aarch64-linux-android24`.
-- [x] ELF verified as a 64-bit AArch64 Android shared object.
+- [x] ELF verified as a 64-bit AArch64 Android shared object with no `libc++_shared.so` dependency.
+- [x] C ABI validates native block counts and rejects failed native operations.
 - [x] Direct comparison against the exact legacy Windows DLL: ciphertext matched and cross-decryption passed for four synthetic fixtures.
 - [x] Repeated key initialization (64 key changes on one MD159 instance) passed under AddressSanitizer with leak detection enabled.
 
 Android artifact:
 - Name: `libbisquecrypto-android-arm64`
-- Artifact ID: `14312077637`
+- Artifact ID: `14314059511`
 - Target: Android API 24, AArch64, NDK r27c.
-- The artifact is attached to Run 55 and is not committed to the OPTC bot.
+- The artifact is attached to Run 59 and is not committed to the OPTC bot.
 
 ## Remaining validation gates
 
