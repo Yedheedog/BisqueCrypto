@@ -171,7 +171,7 @@ jobs:
             -I/tmp/bisque-port-probe \
             /tmp/bisque-port-probe/BisqueCrypto.cpp \
             /tmp/bisque-port-probe/BisqueB64.cpp \
-            BQ_Crypto/portable_api.cpp \
+            /tmp/bisque-port-probe/portable_api.cpp \
             -lz -o /tmp/bisque-port-probe/libbisquecrypto.so
           file /tmp/bisque-port-probe/libbisquecrypto.so
           readelf -h /tmp/bisque-port-probe/libbisquecrypto.so | grep -E "Class:|Machine:"
