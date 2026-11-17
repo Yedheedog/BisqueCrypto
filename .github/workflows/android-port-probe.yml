@@ -26,6 +26,7 @@ jobs:
           src = Path("BQ_Crypto")
           dst = Path("/tmp/bisque-port-probe")
           shutil.copytree(src, dst)
+          shutil.copy2(Path("BQ_Crypto/portable_api.cpp"), dst / "portable_api.cpp")
 
           header = dst / "BisqueCrypto.h"
           data = header.read_bytes()
@@ -138,7 +139,7 @@ jobs:
             -I/tmp/bisque-port-probe \
             /tmp/bisque-port-probe/BisqueCrypto.cpp \
             /tmp/bisque-port-probe/BisqueB64.cpp \
-            BQ_Crypto/portable_api.cpp \
+            /tmp/bisque-port-probe/portable_api.cpp \
             -lz -o /tmp/bisque-port-probe/libbisquecrypto-host.so
           python3 tests/portable_ctypes_smoke.py /tmp/bisque-port-probe/libbisquecrypto-host.so
       - name: Install Android NDK
