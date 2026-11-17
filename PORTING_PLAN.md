@@ -33,7 +33,7 @@ The source includes `defs.h` with Hex-Rays decompiler-output definitions. Treat 
 
 ## Verified validation
 
-Latest successful GitHub Actions run: [Run 59](https://github.com/Yedheedog/BisqueCrypto/actions/runs/44053677730).
+Latest successful GitHub Actions run: [Run 62](https://github.com/Yedheedog/BisqueCrypto/actions/runs/44054722765).
 
 - [x] Linux host compilation and MD159/R-Base64 round-trips.
 - [x] Portable C ABI tested through Python ctypes.
@@ -48,10 +48,10 @@ Latest successful GitHub Actions run: [Run 59](https://github.com/Yedheedog/Bisq
 
 Android artifact:
 - Name: `libbisquecrypto-android-arm64`
-- Artifact ID: `14314059511`
+- Artifact ID: `14314408867`
 - Target: Android API 24, AArch64, NDK r27c.
 - `libbisquecrypto.so` SHA-256: `827594ea81164fe4e2c4f2c4e201e27f479cacdc8faecfba8a74c58432fecd8`.
-- The artifact is attached to Run 59 and is not committed to the OPTC bot.
+- The artifact is attached to Run 62 and is not committed to the OPTC bot.
 
 ## Remaining validation gates
 
