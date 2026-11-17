@@ -48,6 +48,30 @@ InflateResult inflate_all(const uint8_t* input, size_t input_size) {
     return result;
 }
 
+bool is_valid_rbase64(const char* data) {
+    if (!data)
+        return false;
+    const size_t length = std::strlen(data);
+    if (length == 0 || (length % 4) != 0)
+        return false;
+
+    size_t padding = 0;
+    for (size_t i = 0; i < length; ++i) {
+        const unsigned char ch = static_cast<unsigned char>(data[i]);
+        const bool alphabet =
+            (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+            (ch >= '0' && ch <= '9') || ch == '.' || ch == ',';
+        if (ch == '_') {
+            ++padding;
+            if (padding > 2)
+                return false;
+        } else if (!alphabet || padding != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void* copy_to_malloc(const uint8_t* data, size_t size) {
     if (size == std::numeric_limits<size_t>::max())
         return nullptr;
@@ -106,11 +130,12 @@ BISQUE_EXPORT void* Encrypt(void* instance, const char* data, int length) {
 BISQUE_EXPORT int Decrypt(void* instance, const char* data, char** output) {
     if (output)
         *output = nullptr;
-    if (!instance || !data || !output || data[0] == '\0')
+    if (!instance || !data || !output || !is_valid_rbase64(data))
         return 0;
     try {
         const std::vector<uint8_t> decoded = RB64Decode(data);
-        if (decoded.empty() || decoded.size() > std::numeric_limits<uint32>::max())
+        if (decoded.empty() || (decoded.size() % 16) != 0 ||
+            decoded.size() > std::numeric_limits<uint32>::max())
             return 0;
         std::vector<uint8_t> plaintext;
         static_cast<MD159*>(instance)->Decrypt(decoded.data(),
@@ -142,9 +167,13 @@ BISQUE_EXPORT int DecryptNTY(void* instance, const char* data, uint32 size,
         if (encrypted_size == 0 || (encrypted_size % 8) != 0 || encrypted_size > size - 16)
             return 0;
 
+        // MD144 views input as uint32_t words. Copy first so unaligned caller
+        // buffers remain safe on ARM64 and other strict-alignment targets.
+        const auto* payload = reinterpret_cast<const uint8_t*>(data) + 16;
+        const std::vector<uint8_t> aligned_payload(payload, payload + encrypted_size);
         std::vector<uint8_t> decrypted;
         static_cast<MD159*>(instance)->DecryptMD144(
-            reinterpret_cast<const uint8_t*>(data) + 16, encrypted_size, decrypted);
+            aligned_payload.data(), encrypted_size, decrypted);
 
         std::vector<uint8_t> final_bytes;
         if (is_compressed) {
