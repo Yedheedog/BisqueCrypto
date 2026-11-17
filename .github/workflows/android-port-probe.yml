@@ -132,6 +132,15 @@ jobs:
             -lz -o /tmp/bisque-port-probe/probe
           /tmp/bisque-port-probe/probe
 
+      - name: Build and test portable C ABI with Python ctypes
+        run: |
+          g++ -std=c++17 -O2 -fPIC -shared -D__fastcall= \
+            -I/tmp/bisque-port-probe \
+            /tmp/bisque-port-probe/BisqueCrypto.cpp \
+            /tmp/bisque-port-probe/BisqueB64.cpp \
+            BQ_Crypto/portable_api.cpp \
+            -lz -o /tmp/bisque-port-probe/libbisquecrypto-host.so
+          python3 tests/portable_ctypes_smoke.py /tmp/bisque-port-probe/libbisquecrypto-host.so
       - name: Install Android NDK
         run: |
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
@@ -161,6 +170,14 @@ jobs:
             -I/tmp/bisque-port-probe \
             /tmp/bisque-port-probe/BisqueCrypto.cpp \
             /tmp/bisque-port-probe/BisqueB64.cpp \
+            BQ_Crypto/portable_api.cpp \
             -lz -o /tmp/bisque-port-probe/libbisquecrypto.so
           file /tmp/bisque-port-probe/libbisquecrypto.so
           readelf -h /tmp/bisque-port-probe/libbisquecrypto.so | grep -E "Class:|Machine:"
+
+      - name: Upload ARM64 Android library
+        uses: actions/upload-artifact@v4
+        with:
+          name: libbisquecrypto-android-arm64
+          path: /tmp/bisque-port-probe/libbisquecrypto.so
+          if-no-files-found: error
