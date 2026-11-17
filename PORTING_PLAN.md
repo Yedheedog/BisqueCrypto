@@ -33,7 +33,7 @@ The source includes `defs.h` with Hex-Rays decompiler-output definitions. Treat 
 
 ## Verified validation
 
-Latest successful GitHub Actions run: [Run 66](https://github.com/Yedheedog/BisqueCrypto/actions/runs/44055320501).
+Latest successful GitHub Actions run: [Run 69](https://github.com/Yedheedog/BisqueCrypto/actions/runs/44055825269).
 
 - [x] Linux host compilation and MD159/R-Base64 round-trips.
 - [x] Portable C ABI tested through Python ctypes.
@@ -43,6 +43,7 @@ Latest successful GitHub Actions run: [Run 66](https://github.com/Yedheedog/Bisq
 - [x] Android NDK cross-compile for `aarch64-linux-android24`.
 - [x] ELF verified as a 64-bit AArch64 Android shared object with no `libc++_shared.so` dependency.
 - [x] C ABI validates native block counts and rejects failed native operations.
+- [x] Accepts both custom R-Base64 and standard Base64 (including `+`, `/`, and `=`), matching the legacy database map-table path.
 - [x] Direct comparison against the exact legacy Windows DLL: ciphertext matched and cross-decryption passed for four synthetic fixtures.
 - [x] Published legacy decryption sample matched the original DLL by SHA-256 without logging its plaintext.
 - [x] Captured a deterministic synthetic ciphertext vector for the eventual on-device compatibility smoke test.
@@ -50,10 +51,10 @@ Latest successful GitHub Actions run: [Run 66](https://github.com/Yedheedog/Bisq
 
 Android artifact:
 - Name: `libbisquecrypto-android-arm64`
-- Artifact ID: `14315402424`
+- Artifact ID: `14315189830`
 - Target: Android API 24, AArch64, NDK r27c.
-- `libbisquecrypto.so` SHA-256: `827594ea81164fe4e2c4f2c4e201e27f479cacdc8faecfba8a74c58432fecd8`.
-- The artifact is attached to Run 66 and is not committed to the OPTC bot.
+- `libbisquecrypto.so` SHA-256: `5d94d347e904f956e7a00be080458c0614584b62ff900b12e548479278aefa6a`.
+- The artifact is attached to Run 69 and is not committed to the OPTC bot.
 
 ## Remaining validation gates
 
