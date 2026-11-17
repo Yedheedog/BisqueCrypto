@@ -9,7 +9,7 @@
 int main() {
     const char* keys[] = {
         "vuyWQSjlknpJF54ib36txVse",
-        "anotherValid24ByteKey1234"
+        "anotherValid24ByteKey123"
     };
     MD159 crypto;
 
