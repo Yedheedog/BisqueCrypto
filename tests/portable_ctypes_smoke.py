@@ -67,6 +67,27 @@ try:
             break
     assert standard_symbols == {ord("+"), ord("/"), ord("=")}, standard_symbols
 
+    # Match database.py's 512-byte encrypted map-table input size.
+    map_plaintext = bytes(range(256)) * 2
+    map_buffer = ctypes.create_string_buffer(map_plaintext, len(map_plaintext) + 1)
+    map_cipher_ptr = library.Encrypt(
+        instance, ctypes.cast(map_buffer, ctypes.c_void_p), len(map_plaintext)
+    )
+    assert map_cipher_ptr, "512-byte map fixture encryption failed"
+    try:
+        map_custom = ctypes.string_at(map_cipher_ptr)
+    finally:
+        library.ReleaseBuffer(map_cipher_ptr)
+    map_standard = map_custom.replace(b".", b"+").replace(b",", b"/").replace(b"_", b"=")
+    map_output = ctypes.c_void_p()
+    map_size = library.Decrypt(instance, map_standard, ctypes.byref(map_output))
+    assert map_size == len(map_plaintext) and map_output.value, map_size
+    try:
+        map_decrypted = ctypes.string_at(map_output, map_size)
+    finally:
+        library.ReleaseBuffer(map_output)
+    assert map_decrypted == map_plaintext
+
     # Reject malformed R-Base64 instead of silently decoding a partial block.
     for malformed in (b"!", b"A", b"AAAAAAAAAAAAAAAAAAAAAAAA"):
         bad_output = ctypes.c_void_p()
@@ -105,6 +126,7 @@ try:
 
     print("C ABI + Python ctypes round-trip: PASS")
     print("Standard Base64 database payload compatibility: PASS")
+    print("512-byte database map-table compatibility: PASS")
     print("Malformed-input rejection: PASS")
     print("Unaligned NTY decryption path: PASS")
 finally:
