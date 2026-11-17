@@ -67,21 +67,26 @@ public:
 		void* m_Alloc1 = 0;
 		void* m_Alloc2 = 0;
 
-		~KeyContext()
-		{
-			if (m_Alloc0) {
-				free(m_Alloc0);
-				m_Alloc0 = 0;
-			}
-			if (m_Alloc1) {
-				free(m_Alloc1);
-				m_Alloc1 = 0;
-			}
-			if (m_Alloc2) {
-				free(m_Alloc2);
-				m_Alloc2 = 0;
-			}
-		}
+        void Reset()
+        {
+            if (m_Alloc0) {
+                free(m_Alloc0);
+                m_Alloc0 = 0;
+            }
+            if (m_Alloc1) {
+                free(m_Alloc1);
+                m_Alloc1 = 0;
+            }
+            if (m_Alloc2) {
+                free(m_Alloc2);
+                m_Alloc2 = 0;
+            }
+        }
+
+        ~KeyContext()
+        {
+            Reset();
+        }
 	};
 
 private:
