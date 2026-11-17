@@ -28,7 +28,7 @@ library.ReleaseInst.restype = None
 key = b"vuyWQSjlknpJF54ib36txVse"
 plaintext = b"short"
 expected_ciphertext = b"xk13,hfJ7OCxpCGi,jR8fA__"
-expected_plaintext = plaintext + (b"\\0" * 11)
+expected_plaintext = plaintext + (b"\0" * 11)
 
 instance = library.CreateFromKey(key)
 if not instance:
